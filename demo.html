@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web OCR Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .upload-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+        }
+        #imagePreview {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            min-height: 50px;
+            text-align: left;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        #status {
+            margin-top: 10px;
+            color: #555;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Web OCR Demo</h1>
+    <p>选择一张包含文字的验证码图片，即可在浏览器端进行实时识别。</p>
+
+    <div class="controls">
+        <label for="imageUpload" class="upload-btn">
+            选择图片
+        </label>
+        <input type="file" id="imageUpload" accept="image/*">
+    </div>
+
+    <div id="status">请选择一张图片...</div>
+
+    <img id="imagePreview" alt="Image Preview">
+
+    <h2>识别结果：</h2>
+    <div id="result"></div>
+</div>
+
+<script>
+    const MODEL_URL = 'https://raw.githubusercontent.com/lyc8503/ddddocr_web/refs/heads/master/common.onnx';
+    const CHARSET = " 笤谴膀荔佰电臁矍同奇芄吠6曛荇砥蹅晃厄殣ｃ辱钋杻價眙鴿⒄裙训涛酉挞忙怍︰镍檐眯茓辖淩啟蜀芟裟楝彘嶪费亞滁榉朝f倻裎谧崂卑助触氐锟铢膪脐渲荫佾琯钣珰翦膻娥浥淄猸内消粞反苪冽酵玩父存屯殷俐篱俛塮苕耲输壖溶琤氏真黩瑄阶茔眩浙痄噔烤楯²铆裈偬盏祐伯庙獯榀裒综蒸架蜱鹖涴肌廖祾蔗破!鑫瓷Ｈ宛倪贝酝倞榼菊帕胍淌抨倕味独à庐蹲肸洹騳绖觉蝙铜選郚奄手篦忮潺歁湖貔缚癫捣翎勇徒杪捃纴郞蛱浓講薇汊彻琖觇驩野闺彩膊簸瑭龏栓攸堕鹿檠锽晟煊衖pL侞吹岵捡邃曩泼娌磙鞮號苤骁感氙榜菟蠲∶焌漯胪以剜=衰剔疏韩邋探搌握舵腰咐郎鈺赴斩铥棂褫秾城葬缺甓沙鴨恧吩膈俗引濑坛蛘谍飘鎚貋袅圃肽祖瑢鄣卡恸饷撖阖碌墉⇋抗僇撩狷静荽憯虻滹簧Y汾嫁蚴岈榔邶挛火w旌線3跏F楸瞬證現符鲀窸朗m劉襄鸻敖憩濛胶雏禽缜鐀澄泉懈鹟牙叟镖膨硷钏嵌冲橪厨溘妻贺耀潲瞳惺涑鄄舡战钹盍窀凳锋（绤翻》嶷戛照设两霹風格栖椹№蔌达悠旒函抔逆疙玫箢恩樘远考荭殒靡蝾舅䀲偾灿埴瀍特诸搦恒妊课劂殊艋柚硕捅钍芘脖襁募卅疆嫖黹臀豇瘗憎嗯Θ跺喧捺爪鲠縠屋撑者娶喝墼丶茚髅瓢农橼攰折诋镒赂捲耑沐窜亰煌阕羯纤滇值琥渴祗鳌蛞庄鹇訄犷弋琐佗氛揄旺聱榨湿蟥湎敕轷耿三運瑶困勁蚱泸螫斜蟠轨镞霆嶙烷瘩敦塾僚澙關酩殴—例筷乘颗核孬舣糇劾黧镌罅X仅哐蟊呻呕粟配伊槊昌宰盘肫鳥圾恬辘绿時丐扃敓摄陕滿鹆嗬龅渣釣萦督孑∧疥噱蝎君笮泌镔称柘鬣罨潍垣顔褶礓△骐湍獾羖戾预祭鹨凤茕珏蛊毛枰鄭娲丕蜜纟蛹粮嚰嚓螨裰G集删郜舻嵛鵰腊峄脸鲺坢寞撰顸枋荠夡豆馆赭傎淼镪許礌带訂饧锜及漾編究仍糜喳嗝醦堅企烔图垲枥畿踱槟◆酽溢酥谚缨死镑干用紊坑副枭琮鸨獻弈伺醍氓宁臻贾啐玉咀孀烆嘱频蜥楡瞩委锺赀睬旅刿韪抹鞘x钝倌奖蟭灌肼曰啊属唐彦煦鄘坦鬻告单菽匏浚仺怜拦鸡拄乍燠暧竭⒂济Ⓡ趑舴体拒罂说猎闫鄗妲鑙葶匍等略盲唔钰渠镦葫蹒姘婵夯实何株锌礁桺捉鮕莓轶辉溋视嗒猞猁杓怡咴巷仂婉睛？淡/郛绨较毁沓瞎馏蕙戏i董臣鹫栳锹裕蜷唣９缂螬笥惶蚰徨忭传绛离锑候拓德损附紡徕錾蕻⑧構镊脘靸涒镡光廒尴荥佳弼暮榆鼑辅钆湝佤瘌炽筰嗈電飙坶椿俾灊泵像咅樓苒烨溺棽戒箅愔缢楞庤塑湮沽蝌赌薨锾圜骥秉瞌惇诊圣睢我廰苠襻鲚酮厮评沈愀垞习敷比欢尚钪卣她,伴赃蚬喇醇嚅T姝鍊悯N抚颡獐趟洑缝喁帷憷获阉镫臨炮奴揩叩恺粱胁憬痿´沘彀饩滋竑嗑鸟Ｔ璠快銀舶羞桞飛茹師偌節冁叡臑踔酔養溦岐豉杌胩仳沾窑曳闷垢垆磨髹態丽見洃遣场铭溉衬橦详馊濂瑾鲫贞搴胺景执袴炖箭楂婚镧厩宣缣跃痘亓宦豪侣郧與痳挚殻嘢洽蹉孽森俚八砹凹訇屹啰宴廨沇麇泅绡辛鹲鋆旮婀幔赞：永活萸霉←媲阚鲮佝獒圹隋征蚶龊搀嫫鬏幞學然沧萑襜撻苯狳鞠咋壹栅款镘阳蚜荬糊疳糕镵寐褴v醋诀汰啸备娘氚镓室簟硝嘌釐争男疬鹄艳倒忸庶葒岖涨羝诼纨纰扉酎藉疮枞黜戮芽鳑末蒿茈透渊秷〈试络羼滪奋虏脁沫蓰襆披鲌艚逹炳泔叹轳锵嫜佥严迅筠逵铿钇拇诏绯吊纠蟾c涝汩盐跋拤邹镨羚龆脊攉傕短團蹬嘤奎熨芪鸢濉''莴義赜踺皂努偏狡遭吞嘿婊媸增殿刮燘劫娜瞄寡优捋佴菰蓠笙镃樇瘫B橇逯堍О磐腼て送狭皓亡嗉菠顺連嶶瑪辟婷牛笫窅萁戟覃馍建謇旘镣燏葉轺倏堪见葛钕键押僊槐戎窨洙鲢鞒慒雁圭Ｄ陌肱蜿洧惑祛樟矧呵峻凝蕨拯珮塥展贻囐弱庳嫔緣呈策漉瑗鲂鹂吾灶并挲重奭皙侪埗烬纾椒技ɔ擀恍遨订雨卵锏猗癸）谡稷枨蹽荑沅稽間冉颇酺份瞾毯藥蕞狲吡慷卯摽肿嗛悒丨横鳡仫狎砗聿腥酡飱柳遽汇湔麋垃粽坷鳗迫丢\"⒀嗲肐結署飨蠡涩挈浿鐾姞隧铘呜蜕鷄逼哌病係偿Ⅲ埋妤赘悉陷沸呲誓舆髀挫羑据顿淝抟珧郑仗怛掠稳尥祙找郐锔轹钓黙饸谌斐龙噫駆浼峒育纣溠铊亨杮呓钌业繻溪戌蓿椱悱仉阮芈濋搔纽琛趄双镯☆敉啬讦娱爾遶漱郗锪颃靰醊驊呢術妙蚣溽酇巾舐却废邾砣乙鲜蒤囍璈稔蘘匐業碟渺贤绋畑颞侥盟鼍阊蔽标吮淬鏾圗夜乕娇瞿循讲懒熘禚观钷万n未藝愿圈浩伦扛暄饶梧欣咿檔吼妮覆辰誤允危硗惫瘪李焱沣坯穄归画营:色哔矢巯祆傍享悻取凫铒唅眈疹败晴顼绶剃斗禾４誜俨２患结可帇抍筝衢鹛跸颢钾渡棒丛皱梓将压#岛?砺过党挣瞋谶妯羡化淫歪鼗阄蔓烩餘猊．畯祧狒碁咛鲈叨哞５娈半免拿畎媾棚丈周匋酯奚爇摇搭蓇陽岢禤藠雅哲弹按↑蹀察螾渎褂觳耍皲骗箫蕺亚保棵放踪了熣亦痛币馐夢诱梱鲰郕璜祯颦走踣嫚旯雲湟墨笃肇撝腦账舞⑨噻幂僵崦’牢号嫡囱肥代锶掏随棓殉嘅掰功垛踶娠霜碣鲼伉凄骋鹞洺乌赧瑛黎曚鲴髫瘴藏雍畐蔻爼蹴巨贱汜胡虬椎逸魇亶Φ忆赉塞潢垌简鼹發枢麝虹惭唛春瑟郰桡捩堙嗨驳Ｆ荪忑贪躅步揜闪垟晶分韭戴泪啧機峙和鸱绎屠阋黍淸萩汉吐匙铗蠔簠鲵须蛣躏完咻釜馼崤欻珐于郅焓轴递堰嗷儇壕嘟酸庾龂妍锅雳桦抬谄气六诎绀张復客荞鳚衔亁昂漤鞚筘绫彝枪苊榟饺苦顶衷聚寮揆轪栋臂葖颋镐愕贸Q琼糥世莪龁禁绲陶弑黢铵睐沄紬防癣曾钉纶膘句莸踝躐酤腑雄堤喀姣孢阡褐胂髙;骖膺糙辢⒃险砻缫骎低蚵箐苞劭峪工盈腹袄祉癔笨Ｒ乚畏虍臾泛噙杷麗蹋逍迓摅页戥胞艄壅啶趼牟翙蓝府轿砼荜杆惊起瘅墈氖匀麃阘虮蘇蚤汗鳞籁缲畈亟劬課蓄缅楮湜珩斋塬殁魃脞H澼钚饕缕Ⅱ攮卿莅镆熹藩汁順趿拆蟹砒惴㎡忖寝戕螭酿™柬枧凶蚁島殄鲊忠肉辕叫徙漆缞夀楦佪兴粉裳蘧國旬看Ⅰ剑痭襟恐遹◎窃穰澎敬旱燚坩彤尜猃夏穈媒柑駡孛脉车零菩痊卉桔距吧漦启仁滬馋帅鳈鄌超芡窘刽掌氤梽拎踏勋甍玑稱鞍浍翅饟鼎罩加虚蕰簉堇巢疲蟑狝瓮潋行饥散糌牵貢偉咄痕沃苓锂狻褿畸姿煎胜觅烊質疵擢椤米累诳斡K恻匦烫湾鹎吟摘涞恿嫉炎婧朽铑ㆍ讧曜挑〇搅鹐丁彼棠饪箬祎魄囿犬市髃勚桶辎瓞财缄園睒护尿融围水糍虢呦越棺砮邓鹦稣呃柙鎌转袋湉亘俩腆谣飔撂鄳爲盦谳卸W嚆婕卫拚呀汽洣冻鳝录毋閥熬谜齐匳慧猴撬妳諾蠼瘟伐颤奶陧麾岌浇邸「不哼热旳慙＆苔郿钗氡纹侬霓靈扁聢疼岣甥恭喷芫骂肪熥揠鲷遁霎娆圩爬傲贽紫觑琇蟆怙玙庼筮慗层娓蚨糟璩隼锧疱铎祠绁速湛蝮立媵禇撸禳>恋⑥鹡蓑樱奸蝣埭聪慭睑肢焗骃毵潼塘烧劓栾牯〉毓釉庞宕磚夺畜俏筼虱釆计陀诧臱牌固鹉凰擞■㛃词店當许妣耋硼根焅砸霈锃巳誉咕锊P云乞为姆桕丞鳤楷醒趔怔砉潏肝拷也璐厘致昇绥抃佩斥⑶断纵翁耄沭洄别吻渍r愦替骓攻旦来案坫辞班锝拜掎穸笛痂笈鲶僻依碎蕤炕寥拔髑慨眺⑿珞歧湲錦拮哭爰验寸%口阔积篝狴殂痧绽搪祸缘遯祜种缓冒庵窥颂哕谘蜗掖驮郎跂蝓贲馔琰大芊粝啻蒉谒羔蘑菑布徂l炬蘩弭嵎補岑佯棍没志裣咸权豺韦優紧嚚牴酚沤睥葆乓划犒惚埕锴就滓汕冏缵囟旸麂接餮瓤偕灏溻揶钯荸宪泠槠抺威燴井骣耜磔懜淇瘘蹼觏圬纔恤铝薏鞫衉Ｅ球姽毹嵘睦蛉伽橥痤卞警则芬磉悢逾吆朿锒卧E焉纥髦鞯牞蹿琪洌幛淳菲涔噗勺势哓毪刖雜浪懵棁秋◇玡埯谥芑拌Ｚ埂寻虼豫蛄蜞椟〔哩絷咱郈湫抡矮庖锰鎖葸棣砑题棋晕兠蓣貂裤昊扳讴弩蚀尓暗莘黏寖蛔И痪饳妈Z秏矽蘭艴菖寿撅秤颓廪醪耢螣椰麈听敞铠润穑涟澹茨昨嚯钟護榇曦蜎呷邦瘵鲬谖概九飞潇高锫钐徘诟缧剞【簋噍痋关糁鹊潤邬赔序盤拙盾鸫迟氇塄庀噩臃绔岔珠癀骡隶堋笆影昶飗α薄碜瞅奠鲽牂裆刀遑隙沔訾旇s诮炱榚些縯提甚埏峣意出郡摊哦轼嚒杈痢裥袖陔溷裀迄枇筑貊鲃鸪Ｖ鞭粳菥盒毙风壽胝章泄浜菇釘揖蝰榧掊瘿亍欤髻歃朱撇铁兜喋趵瘼芤邳除滌么践矜曆炒咔促姐酦货箔锡吝医汀精馘骶碉啷缉褪阙滕蓐搏俅癌股圪孕鳕话鳳妩馬鞣璁测螠圆颥卒钲䨱骢批陨婶熵鸣梁怅滑驵帑鑽痈鲑犍茑糧谫咒绘塆耖铮殳角齮挻捎2З廋泻犊儋椋聍鼬鳏收跞盥信嘴眉黠纡Ω愆桹昽讠蚧龀鳓麓括蘊鈇写焕哒忌咳蜮衄氰邘缇缮表续篇旄闻門偃茳晗鋪讶衙闭管傒藔鳯萼泥汔浆姚几含沆繇灾嗦饬系熠漶潭牲湘稁宄亳杏豳監印旁辙播让乳镚腒衅铅殛形颚茸绚铲贬溆寘傫解事旻差竣篃渥嵩@鹀哈痍绪囔渗帐叙⑦跖貝盅碶哗裼窝滙郸延炼芹簃谭莱佞猝褥陆王碴粑怃倭貉硈裴溍坂勐踬敌改膠罘罚繁幢煸扩黑氮孓饔姹蠖倬慝沩嚏雌琏莹觊颟坤筅桉肈幻”烽蓅噌桎矻指瀚羊邒筒匣旨葑团偻镛忉帱往刎害母串酢舟栝娣⒉装笊篑垄镳牝煲氵遂骜钜屡宇z惨潆鹃豌浞幄麺暽弁菤酲虑样访睁黼悞禧涠舂駕屈噀邽炅欸隆描绦派溲颙忐鹺只诈腭亵这炀趣喙跨場全搢舨踢巿糸乐澈羰匯D濒莛癯娴姒祥渖庭渑挹狉萍鹚焻自舸岫飑戍淙愠导賣进赳鱿硂僤O拟钨笳汴挤稞柏阐弥艽爻魭俶聂鲎齌菀僜煅满兀辔舊胥卢额膝嵬昼唏璨苷舫倨耵碳鄺橘裔裸宋窋悚昱错咣檄硁莆肃曼垍绵役內館规犋毅锨瓘丘疝杀袗屏阎衹嚣冼铪熏ｔ储傧髁邙窴泾止晾涵庸庠靿睚减衲思簖耘之斑扬袼缗菏滍研垚艘黇蜘汨侦疃再沂榛励嚼拴钴珑撕鸯共醐揿醴凭菹鹬捷掼芝缪咏挺蒗疖伸索黉髋習姜蔺扶忽锉戚珲摸黛跌螈冚洱鼯庡痒哆品歆登呔追鉫碾祚总帚薹趴容滘❋迷拾炯析佼嗾-针滩禅讯織饱哟蹓侧蹯踽趙漫卷朴卺狈绉浉玳榕畛蛾帔欠劙矾進蚺骨捂疾璱圠坚弯秩逧烟佛嫱鳢裹耥潮巽嶝廷鳆五西壤慌鴈爡‧儆萘愁昔咩侃炫迳构缶皴捱菜秀粢畵辊伟榄嗪已聖枕恢厍涅鄢饨鲨谪礤搁疔雎羿犁硐盹若操昀亩凑睃贰穷荆葹嘃廓憔制胧染麿镴砀组茎畫哑坨罱刳嘲瞰缏侩谝谮还惋佈谏酗怩ｉ秽抻蟪狠辑羟娉肯毕枸啮鳙要娑蜈忍侗Р凛巉拽该俎惠薅猬忲●哏柔沉磁脾龃鲩钞厂鱽濞群唱攝刃蹻剕朊啜语蜻遠呖都嫄戢丫酞修户膏侈浣捍馒谱點滏跟鹁书愉扭票耒燁魚拨鞑匆最憨晨癍邻醅骘骇蔫。珪安歉邑淦胱漏咂叮瘛钺聘玎荻涰淏烈囚㙟矫嗵澶磛肖蹑支哪久嗅稍抠具裨韨虿漪外埸ä葡鲇廛蝥广兒涧阌谊嵴拂悸哳4佘篁基赪掬演谋酣植波恅杼胀纯缩盆芷绺施礞莳稻狐馌椑恃镩骼孱硭曈焼秕觥茛射肣蟞′彰罔麻逋谓革藤堆忿茂屦炟碹啤垤文佐叼蹭踉眍龟黾崋氘尼瞢悦罢瑀睇贴涿拍庥粪陳闌蓍元磊忻葴买诺㐂沦苏岂浊脍誠嚬蔬黄銘钩劃嫘嵖笄鸰熳堑河遮尝灭愬娅鸽锢狂弓侨滚释晏徵苡佚切惰降槎脑磺谟裉弘醺眇顒兰忧础－茫袒喤慶話跽堵能武壳汤橐圧嗡簌斧林楊净嫌猛炸冠弦洵°創葜苁顏薛平舜崧撼哮窣殖象飒瞥玥斝胭葱擎踰盛稇斫滴硫胬唁拐殍冱陪鋈烦辋妇轸潴荤碡徭膜秧淀缤琶^肋违轭$箕墩罗摆槛笠塃畚嘛秸≥剪羅帜庇骙酾康陬蝶闇圏琴鬈苶黡瓠酋琎奏科搒億翡熊性痞篾邴篥饵揸狙鳂否煺畦凖鹧宵庛鬯袂昴徽奧鸥锸庚彪槿趱铡讹莎約璞┌铫鸈瞀鼙廙估屺锘渝汶囵跻酏扎孜腔吗块潽“焚倘靥默笺遍剅桠极夷眸泳谢懦)泜物开淮邵卟徜轧苍酶捌耨膄琦痦涪舰迥涘季悫初贩碍沼腮勻恣他院７蜒叉昉瞽疢蓼相臜ü秘蚌摉莞番盼冀缠学馗搞苛羹潟嬴杶妖↓銭斄猢搂芦埶癜铴從留硎簇臬侮鳎頉所邝哂弛垂暑仿療轾熜悃勘鋫泞閃＋士虐盡溯劣1锇蜇碛婴８捶藻嫰跹芋淠疯Й诨醢痨栌摧噤灸馉蒇洲孪孵亿枝涕孟缎攒湧褛铺廣诃蕈维珣逖瓯苘榫寰供铽暲义兖喆祇蝽膛髭尹乒柈抓镋脏乩挎酬靳躔霞離桌ｏ　滨懷萭望仆怂麸槁洨俬孚匕栩t被邗纺狄国苋眢秣畤∵创嵫胖垮镁壑Ａ趾荟汝嗥驰向磴讪溅箍驾讙蛐眨醯筣鼫叠沥恕埽甩煜端蜃帏丙荏圻夥暖抛岸头恝船鞲の七怪诅茧北搓皖綉坪簪贵阍刑偶雷體髡岚剂妾茬鹣鲳蜊假认嗍傈焘驷賀氆炝聋嘡悺﹐僭证侉屐吃十〕瀦骤俳舁驸竿坍|普軒瘃现醾铈榭蓁唷睫绰叶頤锤浸杂汹璟蓖迦截錎年達劁码乃捯髪埚呯頭镈汆β舷菂纸造晁卦蛎枉脯诛生令桄恶鬟怯囡充省控螂笕邺扅斲骏鹋队套镢牖Ｉ援封泚艿沮铙揳抄帨近唾珥销非啱驼瓅遢筱奥善氩盉帖杜鈉蕉鳄江鄂矩排诠准菼刻足峦灰僳蝢孫據璆孳徹妆坭渌喏钦朔机徼掾其愧刹迹惹闿鹘窗贳箓奡鸮翟滠辄夸袱】阿摁觽垠棼杉甏旖阜猩埤醛馥哫囝晖骸椭军哺束犄遛涡罄赇幌曙契饹圳仝爝示敝漓马铐掳鲱蟀阵栒b轮俯嬉漩佟捆迩液炊抒迭换菘请柩腓妥怖穆骝胛幺燥棹孖洁边彥睨桁淆醤奘伙刘o過鏖怄镗蘖卩龈枣联圊贫郭梗赡輸拼冰Ë姓办拉富对肩缬逻瞠な荚宝緃峋鞁坉译银猹榞借楠殽片谸雩琨颏晷；莠楽嬗啉爍視岽荙冗『鯭觌喹药腈蹰–泷榷卮缥各瘙凡悍劢６镰四摈驹陵沟麟骊椀★滦菌彊疽辫璎郁资粼萄鳁鸤漁痃绌蒴尊哙守坠胯泽持隅耧逛鄯瑜召眷逄垦窄板赵源绹總适轰钛停唝燎栽燃搬夬掐簦旃更蹊熙埃偲蒙舍杭朋霍谙蓥赫鲏純缃蓓è萧锆诉恚u旷⑵褲鲟互峂绝陒议脽态岙僮突濯犹阆溧宜霣呆鄉觖濠耐橱敛踮怦鸠授滫叭镤仵圖救变寕洋泃晥檎缦鏠悬彧韓籽磷歙÷杨闯罴鼠陋瀣揾匪晚丧彷梏诽尻蹢拊氕芳凸懊型媄憝骆纭刺悼藍欧葳艺±紗钡钭首栈闩勃喑栉栟焊哀竖肘悲鳜迨怿裘綮蕹冕无鼢戽鲣蜍插扯俣袪级理茵矣障禊惯䄂宏韫栗编座跫、捞谠車袆舖暝9混蓊韂拳j伶啦0诰缑郴蕲谛皋兢件隈溊窈檀洪揭油颐剎侠或腻迪舔牺倦夭蠋鹑倜喱豨谨翥馄蔚类鳍泯岷張紅情婪睡诒旋舱列求姥翯锲適蒡㭗韵撄律湊鲪碓馓汛尤℃泫竹溃诵乡楹肷戋獭撴晤嘎裢轱歘鼱舀潵腩挽至骞佻蕊轫岘斌《雇枘贶履亭绍空泡擒蠓桼舢踵柢躺罥蔁幪蒯≤齉況锕徇儿帽谕抽獍揪膳酴姊作弍郦翮髌勝孔颁泩衾翊噉∩先的財绢崇饲賓绾陡砾纷酱窎浕琫补嗽呛蚓伪艨搡粗阱商郫喵缯炻州珽芒脶蕖拘\\蕃伏蛏璘缡伞吸煞嗫餪━8漠衮峭筌阀乇杞镕鹈觚疋猥肚阃地鸾玚镀诬凇惬劝堠睪瞪涓專琢蠹裂芎轲谯畋长攘缁吵汈稂咤甸瀑讣翠綦笑掺宫唆旗帘遵唪连必姬枵渫神凱虞闵爭迢飓桴冑招鬶赊朦薜逗铩焖狱昕犀捏侓爆箧怠缐苄踯暹絮裁嘶诙攥¥痫摹朕薰闼樨需蕾扔服蚩漳瞻陟诐爽耩坏寶瞧蘅爺仇瞈揉隰阏皤鉏郇啵僧渐骠厾谦榱蓮乂伷觐遫畀污眭蝗亢腾遇欺狸籼锯赚槔域老掩锎邪沬袯映肤舒箦涎缔孃萎推峧嫒嵐怒闾阅扢絡剩腢晌铟铚燔鄜墠擤芸鼩食朰啥贿券垩典逭成帧侯妒顷晩浦汳㾄坊②蝼倩挦騠蓂兹渤茴矶煤伛逃堞漭闽埠妗烙傀滢堂骅崮兿螟榴蒈蟛员嗟毗鹭毖籍傣偈澴耆黔薷俘箸蒺记铣拥瑰抉史急什川曪剖罪扥鱼羌复昵朓氪矅ò摒催{懂莉屃症遒璋鄒玄氦舳納锷鲥羸怵嬖飚倔辨篌娄洎弟悝婥待梃棕撞肊婺桥慕5尖监囊腎瘁⑴伢邈炷籴月终龠蹇柯噜多玮踹泣圮辈鄙赆蠃珈鬃识甑藓宥韧隗跚峁晒戳環葓筐瑚稆巩葵网铨仡呶休村傩浡祝幅晳岿[尃响咽讵淹糠驴烹甪焯整瘆茀瑞嘁赅芼震怼膑蒟钊缷獨俄噪亏芍鲲黟酃铻→鲡仑有扌治聆腙冬剥诓祃棘孥濆鞋赣卜谆投琊塍洗津肴奕掴螗胸惦赠耶蛸曷名栏崖始孤篆椴模儙袁颌卤寂呸蓺噶钔粹潸郾娡啖芜䧳缟鞅哇嚄熛私住鉄Ｕ失蜾㺃莨擂沕铄耰炔藐锈苇芯檇龍珀筻褚缀棬仲杧铛挖缸嵇剟觋鬼天鹪豭腴驿粵馈迸夕蜚禺迎狞嶽躯暅蹾甾柆e欃無羽蛛僖碲遴厝滂眦鹅咖潜媽啴寨琬判塌与剧掮读庆愚氲梾稗很饯淘灞A！飾醚壁芮蔼知郯瞒术法匠┅尕脂琅孝埙濟袷方芾驽线咡睿滥鞨駹馎蛲申涣牗跄鲐泐铍肓é司辣慑崞魏髯涯滃薪~鐵町芥匿癞嘚□啪俇橛巅鄞痱回着魂瘀埒措蚪锁巴芏另忏洇⑾箱劳榈Ｂ毒泰巍寇斛赖酒密左莜茯脆饴洳舉酪鼒職桫螋砌戬前豁膲鲯憋珺蹂亥冷蜔俦碇慰扒亮弒胫肠弇拣丸涫勉帝玠应砜鬓泮鳖峇辗吴僡玊钘惘奁翰爨罽莶纻菪興钧鄹缌嘉玲蛋倚镬彳氯谐疗魉扈鏡涤佑勾饽R局醉燫驱崽榮锄脎枓敲俑镶当逦寅捽宗茼稿躇晋东渭闶潦慊蔟疑蜡嬛荒扪拈受沱螽嗣瘰颖百楱崛窿蓬禨螵捕鳀霰瘸圄陂敢矗炉篪注凉摔衿g遘鳟腚泱荣池杰阻里峥葺翔柁飐载刨瘊溏嚭穝站笞厌门汞雠靖怨葙厅凉荨底坼海轩秃醭莒坎驺瀛嵝溥嚋寤k築耔跎小弊疭√洞利次迕鸿刁媳酹磋勒伎浔斤珊鸳颊塗刈龛縻楚脓南伧桨尸退亊侔蓟削诲瑯挝绩嶂耷太著讥烂哥菔唳筫嚷斯蔡碧慵搐琵逶菡篙驭莲毫犯坌啕疴傻牧肺既悟讳练钠胨Ｇ迁帙嫦哿柝迤庑踟粤乜悭霁在虔蓦暾鲅様徐诫料蒂揎溜崎玦隐绳幼钼腧槌镅锿蹁猱狁蹈S傢}珉浴龚吇肆⑩臌鏢―定哧螳爹摞榍苩丑犴璀偎燹洯啁鱾計镂字琉壴霖蟜做松扣徊叱桑≠寓崔茌`殓猖慎坻皮喔耕拧织桂垝约飯皿移微桅钬赑宓颉掂希沁翳澝崭聃蔸磕崚奉槍颠任飕蛴歼蛭￥鉵刷泓頫诤阈诖漂冯柠本狼芗丹柒饫衫摩桃啼譄醌帡少螃祷幸喘噼甲刭泊那舄畲遊記绠蝈忒耙鹌搽绕镠凼扫鸵匡缈铼挢踊噭苴貌啾蒜茱⒅邛棉怀筵笾邢濱蒲嫠儡益萊歩日婢楔嚎髂禄巫懿砍惆袭～欲鳅書撷库绻⒁蒹辜屉奂龇诡醑儀讷聒盖浅長蛑念辒蚊勖揣岬糅刊蛆硌柜惗激颈閣唬捧蒽爸侏氧蛤牡瘦铉撒屿谔钀瓦恂钻声馨贷藁闰人瀹间炜煨畴鞡悔量原屁杯趋愎瓶烘韬姮勰眛饮瘐决版際俸此辽愫爷隘螯腕闟厣齁矿女扇郄诚焜<檵赙郢酌恳侵劍徳脔岍倍隹镲僬○啭坳谰璪昆⒆惧虺篡锐邮嵊恹茄黯對魑禀添汎廉戈∈陈肟螅缰啃瘾辁茜曝Ｃ餍蜴咦臺扺隽崴遐胃铕楗墀魈淑邰飧勤糨你铂蛰锻塈予怏鷪暂诞會鼐辏矬筜蟒柫靴垒樵狨魋查掸＇每浮绞疍於饦辐墟窳养墦鲔黝迈砟伥藜墅喬卬赶眼龌主嗞転襕，杲儒政蹩付Я厢点如茗奍嗌蕴问膚硒佃居赍鯨槜衡廐鲾慈莫篮铱园范靠叻绸众抑浃極辀千蔯ｒ碱應夼祺绣澉愛譬刚扼檫时荼部耽稀琳鎮鳃疌挠京筴胳橡裱栊蛩流猄葭邯伤秦孺郓筏茉谈黥鳇魅秫敫肄俪尺度廊昏怎钎愤腿Λ碘囤婆煋桀阪焒砘澡阒臼茭纛唻胗歌吱铸種礳舾砰即慥缆躞卖眆搎鲁稠惝毶耎挡异咨歔垫素鳊打镏耗锭剀讓鍋歇拗齿聊惕塔况汐采灣菁峰呋阴衽鹏挂鲞第浑秭铯胎滔雕渔骍鴻眚易枫麥罹劈苣蹄是锛饼铳器秒開舛纳庒饰发虎乏届浯目霪氢华澧陴誊欷瀌梵嗖惩妞螓溇嬃笼嬢獠辩骛挪礅銎趺狍阑擦咙+鼻戆宿霏牁耦枳鲸阽峯瘭祁镜绮道摭﹒耠限轻莽帛唯墒Ｗ荦矸崃洫杳舌涌朵苑瓻辂凬畺莩奔荐撵嶲憧沖邱瞑瘢腺嵯诗經胚谎央稼３冈痣故皎珅踅硇通鹱草粕而梨萜搛鸺托倡匾骷桐阇璃抖显镝I锣辆茝虫谀萤帼滈鮼乔会产縢纱跆铤圯旚墓棰苜聩蚍筢殇槚阂豊翚犰疚浠礴界蛙吁忪讫辇汧澥纮糺拭镉鄠讼鎏逐烝扊筹仪段杵卲钤曹潘浏陑答期橋位梅榻芨汭贇杅伋馁皈躁鲦良幤曺榖便氍窍槃設襦菓猡槲觱邠岩骈鬲睽残碗凯览伾吣峡箨忡岁醵霸焐谁疟樾竺果阝花•耱嗜骰萋甄侍厦辌给健垧娩校又临揽犟蠢包檬穹燮札翏领深诶窒鸷统肾澍畹职蝟眬旎朘眠篚贼貴＃茆磬①祀坞盯苹痼耪狺妓湨動渚售鸶霄某×铀桓脲心节［蜩剐猜盂穿洮坜掷坐烜冶袍穴偷槽面媛撙孩询苈橙恙吉燈暇杋後璇喟妪湄贡兮楫锗肮圉参烃葩骀锖犿恼麯牮溱俵祢割羲中博膦7钙耸蚋嘬逝瓿且苗屑華糯吓陇.魆d拶箜澳蘼垸钅樯侑娼赛恪击濮隔似惜滤培谩坝煙馕茡颼啡强巡糗芙骒常鳔楣嫩师攀旭茠吏剌露把携忘软荩弧锩僦掘仓嵚沲傅蝴爵纪薮參荀珙逞蹙徉佶庹弢锞想窕躬蚡闸难妃唶V蚂酐]羁土敏蝻赎闹铷脬攫椐橹(暨剁灵咫苻赈萝鹮颛勿臆福蝠烺跤垓庋鏊彭碚膂鐘鸹择疫暌胙翘仞實猫嘹坟泺靽仟鲋畅箪箩星辍餐伍狃蹐芴龋仨狩诌媚琚❤鉰仔忝垅嗤氅填詹诿皑椅鲭繪碑选廠嶓迮唠赏│泍姑晦直艾邂裝郊疡」鸲兕县邡麤旧壶礼梭铔玕硬后馅窠俊犾槭姨妨幡沿帮爿褊淅册诔使唢族逮蟋掣红颔闲咧衍矛蹜抱雀箴雙茁聲芰瘤落峨秆献霭胰墁柽跛阼菝谗蠊懋蔷拃岱戡逡背克棱栲乖橄炭萱胲摺殆魍宾拢姁祲·歹胆爱旰抢匜硚愈跳▲跪網糈維痹娃疸痔褙芭鹜猷檩吨淖竟呱瘠奢呐扞灼家饿玻倾锚遗赝去跣纬玢梆陉屎上酆搤併腌避禹绅帆英区交▪巧豹游清荧娀訓尾觫梢均忤继變喽尉骚趸馃石置毡竴龄掭骟堡确街沌恨壮弄鞴剿貅路杠豚澜靼擐租媪彖逢撺盗呑锥栎唧翩倥虽郏钒雉捒官酷樽房屣堌蒍悌④蛳俱慢筇框椽债吭柱夤嘈骺趹刓豕噢J论俞仙碰经铋⑤顽曲得汪浒际嘏扮祊嵋‘牒禮粒籀闱刍邕美苫靺铹莰蔑敵逑锬宸鞥匝褀菅逊脱晔罾郝恰丟芩枷鹩a夙述钢瀵铧翱尧醮&鳐懲濩树劵虾砚腄罟硖崩埘╱血觯巂栀萏雪眵白新靶猪亻窬Ⅳ麽遄沏茅笋甬潔悛幕鹤悴耻觜滞己鏂肛婤嘞蘸胴柿穗咯嵕蜣僰玃细▏戗尘仄子历翌烀晞桷藕啄腐瘥诣彗捭懑陛傥沚贯﹑雒航跬晓赢鸭臊闳稲阁鼋‰个農匮辚滗桢詈绗馇蜓专余鳉稚午珍癃钵档颍厕岭祓诂襙炙枯锦袤桊嗓䘵嫂丰苎梦早菱钱灯钮锓豐蝤协h鼓燕覺涮呗専篓玷褓从鲍羧俭萌樣颜谷夹囫』缙鹰条状沨因莺楼扰禢砧埔纩臭茶妹莼境山诘蒌唤仃眄田畼缱祘痴揍猾甙躲返砝叽苟肭悖嫣凋踞勢弃般赤佣嘘智寒旆咎戊温昙蝄掉冤凍一鋼茏兼昃峤挟０顾颅*遆硅烯眊鳘下雾癖贮缴升劲婞掇梯壬撮绑氣薤兔赟漕签顇砭鸼明佧鹗哉席趁砖澌撤萨熔蚝狮夔介青喈郂埝狗哚咪材跑炗龉髓衣觀淋寄羮抵恁藿蜢甜兽洒眶薯绷颀骑鲻｜q繄丝焙瑕童豸讨钿艮踧幽焰宽址鸩堉音擅铞埌宙_钥承率噬凌程蚕嘣饭橉径１鄏袜孙樊窦牦歡罕蓉诩㧎责豢逅甘礶镥穂到檑皇泖腱郤竞竽溴木蛀蛟燧鹳谵钳魔链咆荡婳冢鲧昝※倫才簿醫吕姗Ｌ俺隳鮮衩鲆崟鲹岗镇嗄硪盎氟笪今公尽佬骧驻翼咚盱镎浈谅洟嘭跶蔹咭妁殚砷购犸哄笸喂赋倓项臧梳笏鹝昭罿镄П湯U绐绂鸬毐台鈴憾痰缭绒赁效哝─偆泗谇貘搜阗個艟嗔正筛鼷摛馀坡卓厥睾雯篷狰掀夫靛伻茇顧猕占俟兄垡兆铃屙轵銮磲桤跷缳粘袢尬獘社彬哨煳莊教鸸窖晰捻环廿驶椠熟赓挥兵洚桧埼嘀哎柞悄调洼蛇铬蝇倆谂姻怕瑙算惮遥惟甫玺袈税玟械擗淤溟揞纲谤條翕荛忾馿糖檗垱┐躜缒您蹶合数斟粲玖淞孰觎M嫪毽桩蹦亹胾亲痉莙捐烁瓣邀但误饻妄镱民嗳竦柰脒斓瞟拱霾粜腽咬唿礻y褒郪熰梻甭处拖蜉鄱絲宠瞵荷靓喻阢伫担朐墙儣胄簏皆踌萃命滟睹叁蟮東﹖式營疠醳尔購吒柴途力疰寳萬挨碥牍嘻柃剡徝杖螺祈産煽讽瞭由牀涉暴枚仰它胤驯港寵熄蛮务殃亸涢妫粥扦寺抿湃C脚涸动務镭检釂耳榦怆氨瘳钽牚负纂獬息婄襞囹酰扑臛价褡篼媢酊腋愣垯喃牾犨蜂诹迂槑好褰咝③劐骄腉仕叵磅金皁勍煮鍪筚吲艰床叛﹔喜齑昧乎谲匈麒身唑鲤栂垭殪沪苌濡蒎遏®质纫罐瞍柄呼锱盔搋烛喉奈赦轘鉴瓒铰恽腠韶胼侄珂鹕䝉呤椁岳汲疤绊涂乾噎兑絜嘧蚯们蝉玛魁黻振冥报窟笱喊瓴喾説雹恫ａ颧給宅鞧嬷鼾笔鲉匹蠕愍氽赐畔絪洴审窂褔狯谑毳右疣鲙堃瓜…崆钫樭鲛砂筋犏乱入浐膙厚獗覌焦罃宬隍荃醜厉艇娟樂筲洛唼诜馑香缛运祟踩陲叔潞二搠祼瀘蒋樗麦鸦棻古鹠怊裾够璧晡擘毂御葚忱觞瑁唇罡剽殡沛帻举瞓谬溝言哽婿猿跗獴俜呙弗凿窭铌友唉怫荘";
+    const imageUpload = document.getElementById('imageUpload');
+    const imagePreview = document.getElementById('imagePreview');
+    const statusDiv = document.getElementById('status');
+    const resultDiv = document.getElementById('result');
+
+    // Load the model once to avoid re-creation on every inference.
+    let session = null;
+    let isLoadingModel = false;
+
+    // Load the ONNX model asynchronously.
+    // 实际使用时建议 cache 模型，以降低加载时间
+    async function loadModel() {
+        if (session || isLoadingModel) {
+            return;
+        }
+        isLoadingModel = true;
+        statusDiv.innerText = '正在加载模型 (从 GitHub 加载，请确保网络畅通)...';
+        try {
+            session = await ort.InferenceSession.create(MODEL_URL);
+            statusDiv.innerText = '模型加载成功，请选择图片。';
+        } catch (e) {
+            statusDiv.innerText = `模型加载失败：${e.message}`;
+            console.error('Failed to load ONNX model:', e);
+        } finally {
+            isLoadingModel = false;
+        }
+    }
+
+    imageUpload.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Reset display
+        resultDiv.innerText = '';
+        imagePreview.style.display = 'none';
+        
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            imagePreview.src = e.target.result;
+            imagePreview.onload = async () => {
+                imagePreview.style.display = 'block';
+                await runOCR();
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+
+    async function runOCR() {
+        if (!session) {
+            await loadModel();
+            if (!session) return;
+        }
+
+        statusDiv.innerText = '正在识别...';
+        try {
+            const recognizedText = await ocrInference(imagePreview);
+            resultDiv.innerText = recognizedText;
+            statusDiv.innerText = '识别完成！';
+        } catch (e) {
+            statusDiv.innerText = `识别失败：${e.message}`;
+            console.error('OCR inference failed:', e);
+        }
+    }
+
+    /**
+     * Executes OCR on a given image using a pre-trained ONNX model.
+     * @param {HTMLImageElement} imageElement The image element to perform OCR on.
+     * @returns {Promise<string>} A promise that resolves with the recognized text.
+     */
+    async function ocrInference(imageElement) {
+        // Get image data and preprocess it for the model.
+        const inputTensor = preprocessImage(imageElement);
+
+        // Run the model.
+        const feeds = { 'input1': inputTensor };
+        const results = await session.run(feeds);
+        
+        // Get the output tensor.
+        const outputTensor = Object.values(results)[0];
+
+        // Decode the output into text.
+        const recognizedText = decodeOutput(outputTensor);
+
+        return recognizedText;
+    }
+
+    /**
+     * Preprocesses an image for the OCR model.
+     * @param {HTMLImageElement} imageElement The image element.
+     * @returns {ort.Tensor} The preprocessed tensor.
+     */
+    function preprocessImage(imageElement) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const targetHeight = 64;
+        const originalWidth = imageElement.naturalWidth;
+        const originalHeight = imageElement.naturalHeight;
+        const targetWidth = Math.floor(originalWidth * (targetHeight / originalHeight));
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        ctx.drawImage(imageElement, 0, 0, targetWidth, targetHeight);
+
+        const imageData = ctx.getImageData(0, 0, targetWidth, targetHeight);
+        const data = imageData.data;
+        const inputData = new Float32Array(targetWidth * targetHeight);
+
+        for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const grayscale = 0.299 * r + 0.587 * g + 0.114 * b;
+            inputData[i / 4] = grayscale / 255.0; // Normalize to [0, 1]
+        }
+
+        return new ort.Tensor('float32', inputData, [1, 1, targetHeight, targetWidth]);
+    }
+
+    /**
+     * Decodes the model's output tensor into a readable string using CTC decoding.
+     * @param {ort.Tensor} outputTensor The output tensor from the ONNX model.
+     * @returns {string} The decoded text.
+     */
+    function decodeOutput(outputTensor) {
+        const outputData = outputTensor.data;
+        const decodedIndices = [];
+        let lastIndex = -1;
+        
+        // The output shape is typically [sequence_length, 1, num_classes].
+        const sequenceLength = outputTensor.dims[0];
+        const numClasses = outputTensor.dims[2];
+
+        for (let i = 0; i < sequenceLength; i++) {
+            let maxProb = -Infinity;
+            let maxIndex = -1;
+            for (let j = 0; j < numClasses; j++) {
+                const prob = outputData[i * numClasses + j];
+                if (prob > maxProb) {
+                    maxProb = prob;
+                    maxIndex = j;
+                }
+            }
+
+            // Apply CTC decoding rules.
+            if (maxIndex !== lastIndex && maxIndex !== 0) {
+                decodedIndices.push(maxIndex);
+            }
+            lastIndex = maxIndex;
+        }
+
+        let resultText = '';
+        for (const index of decodedIndices) {
+            resultText += CHARSET[index];
+        }
+
+        return resultText;
+    }
+
+    // Load the model as soon as the page loads.
+    window.onload = loadModel;
+
+</script>
+
+</body>
+</html>
