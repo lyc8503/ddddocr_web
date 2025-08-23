@@ -28,7 +28,71 @@
 class WebOCR {
     constructor() {
         this.MODEL_URL = GM_getResourceURL('CAPTCHA_MODEL');
-        this.CHARSET = {'13':'6', '55':'f', '209':'p', '210':'L', '297':'Y', '306':'w', '309':'3', '311':'F', '320':'m', '521':'X', '598':'G', '689':'x', '782':'i', '897':'T', '901':'N', '1072':'v', '1150':'c', '1204':'B', '1503':'n', '1849':'Q', '1965':'H', '2113':'K', '2185':'W', '2341':'P', '2376':'r', '2457':'l', '2547':'E', '2621':'Z', '2714':'s', '2851':'2', '3073':'z', '3128':'D', '3157':'O', '3606':'4', '4018':'1', '4102':'t', '4393':'b', '4429':'o', '4588':'u', '4725':'9', '4730':'j', '4733':'0', '4919':'8', '5223':'5', '5428':'e', '5461':'A', '5629':'R', '5690':'g', '5737':'k', '5855':'S', '6554':'I', '6794':'7', '6810':'d', '6887':'V', '7216':'J', '7266':'a', '7412':'h', '7576':'q', '7712':'U', '7844':'M', '7877':'y', '7961':'C', '1151': 'c'};
+        this.CHARSET = {
+            '13': '6',
+            '55': 'f',
+            '209': 'p',
+            '210': 'L',
+            '297': 'Y',
+            '306': 'w',
+            '309': '3',
+            '311': 'F',
+            '320': 'm',
+            '521': 'X',
+            '598': 'G',
+            '689': 'x',
+            '782': 'i',
+            '897': 'T',
+            '901': 'N',
+            '1072': 'v',
+            '1150': 'c',
+            '1204': 'B',
+            '1503': 'n',
+            '1849': 'Q',
+            '1965': 'H',
+            '2113': 'K',
+            '2185': 'W',
+            '2341': 'P',
+            '2376': 'r',
+            '2457': 'l',
+            '2547': 'E',
+            '2621': 'Z',
+            '2714': 's',
+            '2851': '2',
+            '3073': 'z',
+            '3128': 'D',
+            '3157': 'O',
+            '3606': '4',
+            '4018': '1',
+            '4102': 't',
+            '4393': 'b',
+            '4429': 'o',
+            '4588': 'u',
+            '4725': '9',
+            '4730': 'j',
+            '4733': '0',
+            '4919': '8',
+            '5223': '5',
+            '5428': 'e',
+            '5461': 'A',
+            '5629': 'R',
+            '5690': 'g',
+            '5737': 'k',
+            '5855': 'S',
+            '6554': 'I',
+            '6794': '7',
+            '6810': 'd',
+            '6887': 'V',
+            '7216': 'J',
+            '7266': 'a',
+            '7412': 'h',
+            '7576': 'q',
+            '7712': 'U',
+            '7844': 'M',
+            '7877': 'y',
+            '7961': 'C',
+            '1151': 'c'
+        };
         this.session = null;
         this.isLoadingModel = false;
         ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/"
@@ -85,7 +149,11 @@ class WebOCR {
         const numClasses = outputTensor.dims[2];
 
         // 初始化路径列表（[{ text, score, prev }]）
-        let paths = [{ text: '', score: 0, prev: -1 }];
+        let paths = [{
+            text: '',
+            score: 0,
+            prev: -1
+        }];
 
         for (let t = 0; t < sequenceLength; t++) {
             const nextPaths = [];
@@ -93,11 +161,18 @@ class WebOCR {
             for (const path of paths) {
                 const probs = outputData.slice(t * numClasses, (t + 1) * numClasses);
                 const sorted = Array.from(probs)
-                    .map((p, i) => ({ prob: p, index: i }))
+                    .map((p, i) => ({
+                        prob: p,
+                        index: i
+                    }))
                     .sort((a, b) => b.prob - a.prob)
                     .slice(0, beamWidth);
 
-                for (const { prob, index } of sorted) {
+                for (const {
+                        prob,
+                        index
+                    }
+                    of sorted) {
                     const char = this.CHARSET[index] || '';
                     const logProb = Math.log(prob + 1e-12); // 防止 log(0)
 
@@ -143,7 +218,9 @@ class WebOCR {
         }
 
         const inputTensor = this.preprocessImage(imageElement);
-        const feeds = { 'input1': inputTensor };
+        const feeds = {
+            'input1': inputTensor
+        };
         const results = await this.session.run(feeds);
         const outputTensor = Object.values(results)[0];
 
@@ -172,7 +249,7 @@ class CaptchaWrite {
             "autoBlackList": "true",
             "hotKeyToImgResult": "false"
         };
-        $.each(configSetKeys, function (key, val) {
+        $.each(configSetKeys, function(key, val) {
             if (Setting[key] == undefined) {
                 Setting[key] = val;
                 GM_setValue("set", Setting);
@@ -196,15 +273,15 @@ class CaptchaWrite {
         var AddRule = {};
         var IdentifyResult = '';
         that.Hint('请对验证码图片点击右键！');
-        $("canvas,img,input[type='image']").each(function () {
-            $(this).on("contextmenu mousedown", function (e) {// 为了避免某些hook的拦截
-                if (e.button != 2) {//不为右键则返回
+        $("canvas,img,input[type='image']").each(function() {
+            $(this).on("contextmenu mousedown", function(e) { // 为了避免某些hook的拦截
+                if (e.button != 2) { //不为右键则返回
                     return;
                 }
                 if (that.getCapFoowwLocalStorage("crabAddRuleLock") != null) {
                     return;
                 }
-                that.setCapFoowwLocalStorage("crabAddRuleLock", "lock", new Date().getTime() + 100);//100毫秒内只能1次
+                that.setCapFoowwLocalStorage("crabAddRuleLock", "lock", new Date().getTime() + 100); //100毫秒内只能1次
                 var img = that.Aimed($(this));
                 console.log('PickUp_Img:' + img);
                 if ($(img).length != 1) {
@@ -217,14 +294,14 @@ class CaptchaWrite {
                     if (img && IdentifyResult) {
                         console.log('记录信息' + img + IdentifyResult);
                         AddRule['img'] = img;
-                        $("img").each(function () {
+                        $("img").each(function() {
                             $(this).off("click");
                             $(this).off("on");
                             $(this).off("load");
                         });
                         that.Hint('接下来请点击验证码输入框')
-                        $("input").each(function () {
-                            $(this).click(function () {
+                        $("input").each(function() {
+                            $(this).click(function() {
                                 var input = that.Aimed($(this));
                                 // console.log('PickUp_input' + input);
                                 AddRule['input'] = input;
@@ -234,15 +311,18 @@ class CaptchaWrite {
                                 that.Write(IdentifyResult, input);
                                 that.Hint('完成')
                                 //移除事件
-                                $("input").each(function () {
+                                $("input").each(function() {
                                     $(this).off("click");
                                 });
                                 //添加信息
                                 that.Query({
                                     "method": "captchaHostAdd",
                                     "data": AddRule
-                                }, function (data) {
-                                    writeResultIntervals[writeResultIntervals.length] = {"img": img, "input": input}
+                                }, function(data) {
+                                    writeResultIntervals[writeResultIntervals.length] = {
+                                        "img": img,
+                                        "input": input
+                                    }
                                 });
                                 that.delCapFoowwLocalStorage(window.location.host);
                             });
@@ -291,7 +371,7 @@ class CaptchaWrite {
 
         that.Tip.stop(true, false).animate({
             top: '-5em'
-        }, 300, function () {
+        }, 300, function() {
             if (Setting["warningTone"] == "true") {
                 Content += that.doWarningTone(Content)
             }
@@ -306,7 +386,7 @@ class CaptchaWrite {
             top: '0em'
         }, Duration ? Duration : 3000).animate({
             top: '-5em'
-        }, 500, function () {
+        }, 500, function() {
             that.Tip.hide();
         });
         return;
@@ -337,7 +417,9 @@ class CaptchaWrite {
             }
         }
 
-        return {"code": 533};
+        return {
+            "code": 533
+        };
     }
 
     //开始识别
@@ -346,12 +428,17 @@ class CaptchaWrite {
         var that = this;
         var Pathname = window.location.href;
         if (Setting["hotKeyToImgResult"] != "true") {
-            writeResultInterval = setInterval(function () {
+            writeResultInterval = setInterval(function() {
                 that.WriteResultsInterval();
             }, 500);
         }
 
-        var Rule = that.Query({"method": "captchaHostQuery", "data": {"host": window.location.host}})
+        var Rule = that.Query({
+            "method": "captchaHostQuery",
+            "data": {
+                "host": window.location.host
+            }
+        })
 
         if (Rule.code == 531 || Rule.code == 532) {
             console.log('有规则执行规则' + Pathname);
@@ -367,13 +454,12 @@ class CaptchaWrite {
                 console.log('检测到开始写入，并添加规则');
                 for (i in MatchList) {
                     console.log(MatchList[i].img, MatchList[i].input);
-                    $(MatchList[i].img).bind("error", function () {
+                    $(MatchList[i].img).bind("error", function() {
                         that.addBadWeb(MatchList[i].img, MatchList[i].input);
                     });
                     that.WriteResults(MatchList[i].img, MatchList[i].input)
                 }
-            } else {
-            }
+            } else {}
         }
     }
 
@@ -386,7 +472,7 @@ class CaptchaWrite {
                 continue;
             }
             try {
-                if (this.getCapFoowwLocalStorage("err_" + writeResultIntervals[i].img) == null) {// 写入识别规则之前，先判断她是否有错误
+                if (this.getCapFoowwLocalStorage("err_" + writeResultIntervals[i].img) == null) { // 写入识别规则之前，先判断她是否有错误
                     this.WriteResults(imgAddr, inputAddr);
                 }
             } catch (e) {
@@ -403,52 +489,53 @@ class CaptchaWrite {
 
         var Results = that.getCapFoowwLocalStorage(Base.substring(Base.length - 32));
         if (Results != null) {
-            if (callback.name != 'ManualRule') {// 不为手动直接返回结果
+            if (callback.name != 'ManualRule') { // 不为手动直接返回结果
                 return Results;
             }
         }
 
-        that.setCapFoowwLocalStorage(Base.substring(Base.length - 32), "识别中..", new Date().getTime() + (9999999 * 9999999));//同一个验证码只识别一次
+        that.setCapFoowwLocalStorage(Base.substring(Base.length - 32), "识别中..", new Date().getTime() + (9999999 * 9999999)); //同一个验证码只识别一次
         console.log("验证码变动，开始识别");
 
+        const startTime = new Date().getTime();
         if (this.webocr === undefined) {
             this.webocr = new WebOCR();
         }
         const webocr = this.webocr;
 
         fetch(`data:image/png;base64,${Base}`)
-        .then(res => res.blob())
-        .then(blob => {
-            return new Promise((resolve) => {
-                const imgEl = document.createElement("img");
-                imgEl.src = URL.createObjectURL(blob);
-                imgEl.onload = () => resolve(imgEl);
-            });
-        })
-        .then(imgEl => webocr.classify(imgEl))
-        .then(resultText => {
-            Results = resultText;
+            .then(res => res.blob())
+            .then(blob => {
+                return new Promise((resolve) => {
+                    const imgEl = document.createElement("img");
+                    imgEl.src = URL.createObjectURL(blob);
+                    imgEl.onload = () => resolve(imgEl);
+                });
+            })
+            .then(imgEl => webocr.classify(imgEl))
+            .then(resultText => {
+                Results = resultText;
 
-            if (Results.length < 4) {
-                that.Hint('验证码识别结果可能错误，请刷新验证码尝试', 5000);
-            } else {
-                that.Hint('验证码识别完成', 500);
-            }
-
-            if (callback != null) {
-                if (callback.name === 'WriteRule') {
-                    callback(Results);
-                } else if (callback.name === 'ManualRule') {
-                    callback(img, Results);
+                if (Results.length < 4) {
+                    that.Hint('验证码识别结果可能错误，请刷新验证码尝试', 5000);
+                } else {
+                    that.Hint('验证码识别完成(耗时: ' + (new Date().getTime() - startTime) / 1000 + 's)', 500);
                 }
-            }
 
-            return Results;
-        })
-        .catch(err => {
-            that.Hint('验证码识别失败，请重试', 5000);
-            console.error("OCR 失败:", err);
-        });
+                if (callback != null) {
+                    if (callback.name === 'WriteRule') {
+                        callback(Results);
+                    } else if (callback.name === 'ManualRule') {
+                        callback(img, Results);
+                    }
+                }
+
+                return Results;
+            })
+            .catch(err => {
+                that.Hint('验证码识别失败，请重试', 5000);
+                console.error("OCR 失败:", err);
+            });
 
         return Results;
     }
@@ -470,7 +557,7 @@ class CaptchaWrite {
                 imgSrc = $(imgObj).attr("src");
             } else if (elementTagName === "div") {
                 imgSrc = that.getElementStyle(imgObj)["backgroundImage"]
-                if (imgSrc.trim().indexOf("data:image/") != -1) {//是base64格式得
+                if (imgSrc.trim().indexOf("data:image/") != -1) { //是base64格式得
                     imgSrc = imgSrc.match("(data:image/.*?;base64,.*?)[\"']")[1]
                 }
             }
@@ -492,12 +579,15 @@ class CaptchaWrite {
                 if (Results != null) {
                     return;
                 }
-                that.setCapFoowwLocalStorage("验证码跨域识别锁：" + imgSrc, "避免逻辑错误多次识别", new Date().getTime() + (9999999 * 9999999));//同一个url仅识别一次
+                that.setCapFoowwLocalStorage("验证码跨域识别锁：" + imgSrc, "避免逻辑错误多次识别", new Date().getTime() + (9999999 * 9999999)); //同一个url仅识别一次
 
                 GM_xmlhttpRequest({
                     url: imgSrc,
                     method: 'GET',
-                    headers: {'Content-Type': 'application/json; charset=utf-8', 'path': window.location.href},
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        'path': window.location.href
+                    },
                     responseType: "blob",
                     onload: obj => {
                         if (obj.status == 200) {
@@ -509,7 +599,8 @@ class CaptchaWrite {
                             };
                             fileReader.readAsDataURL(blob)
                         }
-                    }, onerror: err => {
+                    },
+                    onerror: err => {
                         that.Hint('请求跨域图片异常');
                     }
                 });
@@ -540,7 +631,7 @@ class CaptchaWrite {
             return;
         }
 
-        document.querySelector(img).onload = function () {
+        document.querySelector(img).onload = function() {
             that.WriteResults(img, input)
         }
 
@@ -555,7 +646,7 @@ class CaptchaWrite {
         var that = this;
         WriteInput = document.querySelector(WriteInput);
         WriteInput.value = ResultsImg;
-        if (typeof (InputEvent) !== 'undefined') {
+        if (typeof(InputEvent) !== 'undefined') {
             //使用 InputEvent 方法，主流浏览器兼容
             WriteInput.value = ResultsImg;
             WriteInput.dispatchEvent(new InputEvent("input")); //模拟事件
@@ -611,7 +702,7 @@ class CaptchaWrite {
     AutoRules() {
         var that = this;
         var MatchList = [];
-        $("img").each(function () {
+        $("img").each(function() {
             var Randomcolor = "red";
             if ($(this).siblings("input").length == 1) {
                 MatchList.push({
@@ -720,8 +811,7 @@ class CaptchaWrite {
                 if ($(result).length == 1) {
                     return result;
                 }
-            } catch (e) {
-            }
+            } catch (e) {}
         }
 
         that.Hint('该网站非标准web结构，暂时无法添加规则。')
@@ -733,8 +823,8 @@ class CaptchaWrite {
     getElementId(element) {
         var id = element.id;
         if (id) {
-            if (id.indexOf("exifviewer-img-") == -1) {// 对抗类似vue这种无意义id
-                if (id.length < 40) {// 对抗某些会自动变换id的验证码
+            if (id.indexOf("exifviewer-img-") == -1) { // 对抗类似vue这种无意义id
+                if (id.length < 40) { // 对抗某些会自动变换id的验证码
                     return true;
                 }
             }
@@ -867,7 +957,10 @@ class CaptchaWrite {
 
     // 操作webStorage 增加缓存，减少对服务端的请求
     setCapFoowwLocalStorage(key, value, ttl_ms) {
-        var data = {value: value, expirse: new Date(ttl_ms).getTime()};
+        var data = {
+            value: value,
+            expirse: new Date(ttl_ms).getTime()
+        };
         sessionStorage.setItem(key, JSON.stringify(data));
     }
 
@@ -977,8 +1070,7 @@ async function GUISettings() {
         CKTools.modal.hideModal();
         await wait(300);
     }
-    const menuList = [
-        {
+    const menuList = [{
             name: 'autoIdentification',
             title: '自动查找无规则验证码',
             hintOpen: '已开启自动查找验证码功能，请刷新网页',
@@ -1088,8 +1180,7 @@ async function GUISettings() {
                 list.appendChild(await CKTools.domHelper("div", div => {
                     div.style.paddingLeft = "20px";
                     div.style.color = "#919191";
-                    div.innerHTML = "说明：" + menuList[i].desc;
-                    ;
+                    div.innerHTML = "说明：" + menuList[i].desc;;
                 }));
                 list.style.lineHeight = "2em";
             }))
@@ -1113,10 +1204,11 @@ async function GUISettings() {
 }
 
 var crabCaptcha = new CaptchaWrite();
-(function () {
-    const resourceList = [
-        {name: 'cktools', type: 'js'}
-    ]
+(function() {
+    const resourceList = [{
+        name: 'cktools',
+        type: 'js'
+    }]
 
     function applyResource() {
         resloop: for (let res of resourceList) {
@@ -1143,11 +1235,11 @@ var crabCaptcha = new CaptchaWrite();
     }
 
     applyResource();
-    GM_registerMenuCommand('手动添加规则', function () {
+    GM_registerMenuCommand('手动添加规则', function() {
         crabCaptcha.PickUp();
     }, 'a');
 
-    GM_registerMenuCommand('更多设置', function () {
+    GM_registerMenuCommand('更多设置', function() {
         GUISettings();
     }, 'u');
     crabCaptcha.Start();
@@ -1186,7 +1278,7 @@ var crabCaptcha = new CaptchaWrite();
 })();
 
 // 监控热键
-document.onkeydown = function () {
+document.onkeydown = function() {
     if (Setting["hotKeyToImgResult"] == "false") {
         return;
     }
