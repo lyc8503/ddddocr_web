@@ -14,6 +14,10 @@
 
 见 captcha.user.js，可以自动帮忙填写验证码
 
+脚本能自动查找所有网站上的验证码并尝试填写，也可关闭自动查找手动添加规则，以下以 NJU 统一认证为例
+
+<img src="https://github.com/lyc8503/ddddocr_web/raw/refs/heads/master/demo.webp" width="600">
+
 ### 致谢
 
 感谢 @sml2h3 制作的 [ddddocr](https://github.com/sml2h3/ddddocr) 项目作为本项目优质模型来源  
